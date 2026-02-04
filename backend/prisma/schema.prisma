@@ -1,0 +1,123 @@
+generator client {
+  provider   = "prisma-client"
+  output     = "../generated/prisma"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model categorias {
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organizacion_id String         @db.Uuid
+  nombre          String         @db.VarChar(100)
+  codigo_contable String?        @db.VarChar(50)
+  organizaciones  organizaciones @relation(fields: [organizacion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  facturas        facturas[]
+
+  @@unique([organizacion_id, nombre])
+}
+
+model factura_tags {
+  factura_id String   @db.Uuid
+  tag_id     String   @db.Uuid
+  facturas   facturas @relation(fields: [factura_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags       tags     @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([factura_id, tag_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model facturas {
+  id               String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organizacion_id  String         @db.Uuid
+  usuario_id       String         @db.Uuid
+  categoria_id     String?        @db.Uuid
+  monto_total      Decimal        @db.Decimal(12, 2)
+  itbms            Decimal?       @default(0.00) @db.Decimal(12, 2)
+  fecha_emision    DateTime       @db.Date
+  ruc_proveedor    String?        @db.VarChar(50)
+  nombre_proveedor String?        @db.VarChar(255)
+  cufe             String?        @db.VarChar(255)
+  url_imagen       String
+  estado           String?        @default("PENDIENTE") @db.VarChar(20)
+  motivo_rechazo   String?
+  fecha_subida     DateTime?      @default(now()) @db.Timestamptz(6)
+  factura_tags     factura_tags[]
+  categorias       categorias?    @relation(fields: [categoria_id], references: [id], onUpdate: NoAction)
+  organizaciones   organizaciones @relation(fields: [organizacion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuarios         usuarios       @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model logs_auditoria {
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organizacion_id String         @db.Uuid
+  usuario_id      String         @db.Uuid
+  accion          String         @db.VarChar(100)
+  detalle         Json?
+  fecha           DateTime?      @default(now()) @db.Timestamptz(6)
+  organizaciones  organizaciones @relation(fields: [organizacion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios        usuarios       @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model organizaciones {
+  id               String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  razon_social     String           @db.VarChar(255)
+  ruc              String           @unique @db.VarChar(50)
+  dv               String           @db.VarChar(10)
+  plan_suscripcion String?          @default("Trial") @db.VarChar(50)
+  fecha_registro   DateTime?        @default(now()) @db.Timestamptz(6)
+  categorias       categorias[]
+  facturas         facturas[]
+  logs_auditoria   logs_auditoria[]
+  tags             tags[]
+  usuarios         usuarios[]
+}
+
+model sesiones {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  usuario_id String    @db.Uuid
+  token_id   String    @db.VarChar(255)
+  expira_en  DateTime  @db.Timestamptz(6)
+  creado_en  DateTime? @default(now()) @db.Timestamptz(6)
+  usuarios   usuarios  @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model tags {
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organizacion_id String         @db.Uuid
+  nombre          String         @db.VarChar(50)
+  color           String?        @default("#000000") @db.VarChar(7)
+  factura_tags    factura_tags[]
+  organizaciones  organizaciones @relation(fields: [organizacion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model usuarios {
+  id              String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organizacion_id String           @db.Uuid
+  nombre_completo String           @db.VarChar(255)
+  email           String           @unique @db.VarChar(255)
+  password_hash   String           @db.VarChar(255)
+  rol             RolUsuario       @default(EMPLEADO)
+  activo          Boolean?         @default(true)
+  fecha_creacion  DateTime?        @default(now()) @db.Timestamptz(6)
+  facturas        facturas[]
+  logs_auditoria  logs_auditoria[]
+  sesiones        sesiones[]
+  organizaciones  organizaciones   @relation(fields: [organizacion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+enum RolUsuario {
+  SUPERADMIN
+  CONTADOR
+  EMPLEADO
+}
+
+enum EstadoFactura {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
