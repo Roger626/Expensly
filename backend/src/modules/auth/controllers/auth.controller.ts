@@ -34,6 +34,8 @@ import { AuthResponseEntity, OnboardingResponseEntity } from '../entities/auth-r
 
 // Guards
 import { JwtAuthGuard } from '../guards/jwt.guard';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../decorators/roles.decorator';
 
 @Controller('auth')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -131,7 +133,8 @@ export class AuthController {
     }
 
     @Delete('deactivate/:userId')
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('SUPERADMIN')
     @HttpCode(HttpStatus.OK)
     async deactivateUser(@Param('userId') userId: string) {
         await this.authService.deactivateUser(userId);

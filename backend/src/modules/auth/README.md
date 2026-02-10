@@ -79,7 +79,7 @@ auth/
 1. Cliente envía datos de empresa y administrador
 2. OnboardingService valida que el RUC no exista
 3. Se crea la organización en la base de datos
-4. Se crea el usuario administrador (rol: CONTADOR)
+4. Se crea el usuario administrador (rol: SUPERADMIN)
 5. AuthService genera token JWT
 6. Se crea sesión en la base de datos
 7. Se retorna token y datos de usuario/empresa

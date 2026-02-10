@@ -4,6 +4,10 @@ generator client {
   engineType = "library"
 }
 
+generator classValidator {
+  provider = "prisma-class-validator-generator"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -40,8 +44,10 @@ model facturas {
   fecha_emision    DateTime       @db.Date
   ruc_proveedor    String?        @db.VarChar(50)
   nombre_proveedor String?        @db.VarChar(255)
+  numero_factura   String         @db.VarChar(255)
   cufe             String?        @db.VarChar(255)
   url_imagen       String
+  imagePublicId    String
   estado           String?        @default("PENDIENTE") @db.VarChar(20)
   motivo_rechazo   String?
   fecha_subida     DateTime?      @default(now()) @db.Timestamptz(6)
