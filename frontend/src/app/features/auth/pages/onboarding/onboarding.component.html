@@ -1,0 +1,71 @@
+
+<main class="onboarding-layout">
+
+    <div class="onboarding-header">
+        <span class="eyebrow">ONBOARDING</span>
+        
+        <div class="progress-info">
+            <h2>Step {{ currentStep }} of {{ numberSteps }}: {{ currentStepInfo.title }}</h2>
+            <span class="percentage">{{ (currentStep / numberSteps) * 100 }}%</span>
+        </div>
+
+        <div class="progress-track">
+            <div class="progress-fill" [style.width.%]="(currentStep / numberSteps) * 100"></div>
+        </div>
+
+        <p class="next-step" *ngIf="currentStepInfo.next">Next: {{ currentStepInfo.next }}</p>
+    </div>
+
+    <div class="step-form-container">
+        <router-outlet (activate)="onActivate($event)"></router-outlet>
+    </div>
+</main>
+
+<!-- ── Modal de éxito al completar el onboarding ──────────────── -->
+<app-modal
+  [visible]="showSuccessModal"
+  title="¡Empresa registrada!"
+  [subtitle]="orgName"
+  variant="success"
+  size="sm"
+  [blockBackdrop]="true"
+>
+
+  <div modal-body>
+    <div class="onboarding-success-body">
+      <p class="ob-success-msg">
+        Tu organización ha sido creada exitosamente. Ya puedes comenzar a registrar y gestionar tus facturas.
+      </p>
+      <ul class="ob-success-list">
+        <li>
+          <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+            <path d="M3 8l3.5 3.5L13 4" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Perfil de empresa guardado
+        </li>
+        <li>
+          <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+            <path d="M3 8l3.5 3.5L13 4" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Cuenta de administrador activa
+        </li>
+        <li>
+          <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+            <path d="M3 8l3.5 3.5L13 4" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Panel de control listo
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <ng-container modal-footer>
+    <button class="modal-btn modal-btn--success" (click)="goToDashboard()">
+      <svg viewBox="0 0 20 20" fill="none" width="15" height="15">
+        <path d="M3 10l6 6 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Ir al panel
+    </button>
+  </ng-container>
+
+</app-modal>

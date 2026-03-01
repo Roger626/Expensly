@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { IAuthRepository } from '../interfaces/iauth.repository';
-import type { usuarios, sesiones, organizaciones } from 'generated/prisma/client';
+import type { usuarios, sesiones, organizaciones, categorias } from 'generated/prisma/client';
 import { RegisterUserDto, UpdateUserDto } from '../dto/register-user.dto';
 import { OnboardingCompanyDto, UpdateCompanyDto } from '../dto/onboarding-company.dto';
 
@@ -66,6 +66,39 @@ export class AuthRepository implements IAuthRepository {
         });
     }
 
+    async setUserStatus(userId: string, activo: boolean): Promise<usuarios> {
+        return await this.prisma.usuarios.update({
+            where: { id: userId },
+            data: { activo },
+        });
+    }
+
+    async updateUserRole(userId: string, rol: string): Promise<usuarios> {
+        return await this.prisma.usuarios.update({
+            where: { id: userId },
+            data: { rol: rol as any },
+        });
+    }
+
+    async deleteUser(userId: string): Promise<void> {
+        await this.prisma.$transaction(async (tx) => {
+            // 1. Desvincular facturas (SET NULL explícito, sin depender del cascade del DLL)
+            await tx.facturas.updateMany({
+                where: { usuario_id: userId },
+                data:  { usuario_id: null },
+            });
+            // 2. Desvincular logs de auditoría
+            await tx.logs_auditoria.updateMany({
+                where: { usuario_id: userId },
+                data:  { usuario_id: null },
+            });
+            // 3. Eliminar sesiones activas
+            await tx.sesiones.deleteMany({ where: { usuario_id: userId } });
+            // 4. Ahora sí eliminar el usuario
+            await tx.usuarios.delete({ where: { id: userId } });
+        });
+    }
+
     // ==================== Operaciones de Sesión ====================
 
     async createSession(userId: string, tokenId: string, expiresAt: Date): Promise<sesiones> {
@@ -118,7 +151,7 @@ export class AuthRepository implements IAuthRepository {
     }
 
     async createOrganization(data: OnboardingCompanyDto): Promise<organizaciones> {
-        return await this.prisma.organizaciones.create({
+        const org = await this.prisma.organizaciones.create({
             data: {
                 razon_social: data.razonSocial,
                 ruc: data.ruc,
@@ -126,6 +159,23 @@ export class AuthRepository implements IAuthRepository {
                 plan_suscripcion: data.subscripcion || 'Trial',
             },
         });
+
+        const DEFAULT_CATEGORIES = [
+            { nombre: 'Alimentación', codigo_contable: '100' },
+            { nombre: 'Transporte', codigo_contable: '200' },
+            { nombre: 'Servicios Públicos', codigo_contable: '300' },
+            { nombre: 'Suministros de Oficina', codigo_contable: '400' },
+            { nombre: 'Gastos de Viaje', codigo_contable: '500' },
+
+        ];
+
+        await this.prisma.categorias.createMany({
+            data: DEFAULT_CATEGORIES.map(cat => ({
+                ...cat,
+                organizacion_id: org.id,
+            })),
+        });
+        return org;
     }
 
     async updateOrganization(organizationId: string, data: UpdateCompanyDto): Promise<organizaciones> {
@@ -147,6 +197,15 @@ export class AuthRepository implements IAuthRepository {
         });
     }
 
+    // ==================== Consultas de Organización ====================
+
+    async findUsersByOrganizationId(organizationId: string): Promise<usuarios[]> {
+        return await this.prisma.usuarios.findMany({
+            where: { organizacion_id: organizationId },
+            orderBy: { fecha_creacion: 'asc' },
+        });
+    }
+
     // ==================== Validaciones ====================
 
     async existsUserByEmail(email: string): Promise<boolean> {
@@ -161,5 +220,40 @@ export class AuthRepository implements IAuthRepository {
             where: { ruc },
         });
         return count > 0;
+    }
+
+    // ==================== Recuperación de Contraseña ====================
+
+    async saveResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+        await this.prisma.usuarios.update({
+            where: { id: userId },
+            data: {
+                reset_token:            token,
+                reset_token_expires_at: expiresAt,
+            },
+        });
+    }
+
+    async findUserByResetToken(token: string): Promise<usuarios | null> {
+        return this.prisma.usuarios.findFirst({
+            where: { reset_token: token },
+        });
+    }
+
+    async clearResetToken(userId: string): Promise<void> {
+        await this.prisma.usuarios.update({
+            where: { id: userId },
+            data: {
+                reset_token:            null,
+                reset_token_expires_at: null,
+            },
+        });
+    }
+
+    async updatePassword(userId: string, passwordHash: string): Promise<void> {
+        await this.prisma.usuarios.update({
+            where: { id: userId },
+            data: { password_hash: passwordHash },
+        });
     }
 }

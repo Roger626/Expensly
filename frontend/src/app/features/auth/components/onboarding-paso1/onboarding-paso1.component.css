@@ -1,0 +1,106 @@
+:host {
+  font-family: 'Inter', -apple-system, sans-serif;
+  display: block;
+}
+
+.onboarding-paso1-layout {
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.5s ease-out;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+h1 {
+  font-size: 1.8rem;
+  color: #0f172a;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.025em;
+}
+
+p {
+  font-size: 0.95rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* --- MANEJO DEL RUC Y DV EN LÍNEA --- */
+.ruc-conatainer {
+  display: grid;
+  grid-template-columns: 1fr 80px; /* El RUC toma el espacio y el DV un ancho fijo */
+  gap: 1rem;
+  align-items: start;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end; /* En el paso 1 solo hay un botón, lo mandamos a la derecha */
+  margin-top: 1rem;
+}
+
+.next-btn {
+  width: 100%; /* Por defecto toma todo el ancho en móviles */
+  max-width: 200px; /* Pero se limita en pantallas más grandes */
+  padding: 14px 24px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.next-btn:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.next-btn:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.next-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+app-input {
+  display: block;
+  text-align: left;
+}
+
+.login-link {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.login-link a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
+}

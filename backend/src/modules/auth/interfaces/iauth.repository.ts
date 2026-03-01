@@ -9,6 +9,9 @@ export interface IAuthRepository {
     createUser(data: RegisterUserDto, passwordHash: string): Promise<usuarios>;
     updateUser(userId: string, data: UpdateUserDto): Promise<usuarios>;
     deactivateUser(userId: string): Promise<usuarios>;
+    setUserStatus(userId: string, activo: boolean): Promise<usuarios>;
+    updateUserRole(userId: string, rol: string): Promise<usuarios>;
+    deleteUser(userId: string): Promise<void>;
     
     // Operaciones de Sesión
     createSession(userId: string, tokenId: string, expiresAt: Date): Promise<sesiones>;
@@ -22,7 +25,16 @@ export interface IAuthRepository {
     createOrganization(data: OnboardingCompanyDto): Promise<organizaciones>;
     updateOrganization(organizationId: string, data: UpdateCompanyDto): Promise<organizaciones>;
     
+    // Consultas de organización
+    findUsersByOrganizationId(organizationId: string): Promise<usuarios[]>;
+
     // Validaciones
     existsUserByEmail(email: string): Promise<boolean>;
     existsOrganizationByRuc(ruc: string): Promise<boolean>;
+
+    // Recuperación de contraseña
+    saveResetToken(userId: string, token: string, expiresAt: Date): Promise<void>;
+    findUserByResetToken(token: string): Promise<usuarios | null>;
+    clearResetToken(userId: string): Promise<void>;
+    updatePassword(userId: string, passwordHash: string): Promise<void>;
 }

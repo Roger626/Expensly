@@ -1,7 +1,6 @@
-import { IsString, IsNotEmpty, IsEmail, MinLength, MaxLength, IsUUID } from 'class-validator';
-import { RolUsuario } from 'generated/prisma/enums';
+import { IsString, IsNotEmpty, IsEmail, MinLength, MaxLength } from 'class-validator';
 
-export class LoginDto{
+export class LoginDto {
 
     @IsEmail({}, {message: "El correo electrónico no es válido"})
     @IsNotEmpty({message: "El correo electrónico es obligatorio"})
@@ -14,8 +13,4 @@ export class LoginDto{
     @MinLength(8)
     @MaxLength(128)
     password: string;
-
-    @IsString()
-    @IsNotEmpty({message: "El rol es obligatorio"})
-    rol: RolUsuario = RolUsuario.EMPLEADO;
 }

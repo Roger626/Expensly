@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 import { IsString, IsDefined, IsOptional, IsDate } from "class-validator";
-import { factura_tags, categorias, organizaciones, usuarios } from "./";
+import { factura_tags, categorias, organizaciones, usuarios, factura_imagenes } from "./";
 
 export class facturas {
     @IsDefined()
@@ -11,19 +12,22 @@ export class facturas {
     @IsString()
     organizacion_id!: string;
 
-    @IsDefined()
+    @IsOptional()
     @IsString()
-    usuario_id!: string;
+    usuario_id?: string | null;
 
     @IsOptional()
     @IsString()
     categoria_id?: string | null;
 
     @IsDefined()
-    monto_total!: Prisma.Decimal;
+    monto_total!: Decimal;
 
     @IsOptional()
-    itbms?: Prisma.Decimal | null;
+    subtotal?: Decimal | null;
+
+    @IsOptional()
+    itbms?: Decimal | null;
 
     @IsDefined()
     @IsDate()
@@ -32,6 +36,10 @@ export class facturas {
     @IsOptional()
     @IsString()
     ruc_proveedor?: string | null;
+
+    @IsOptional()
+    @IsString()
+    dv_proveedor?: string | null;
 
     @IsOptional()
     @IsString()
@@ -44,14 +52,6 @@ export class facturas {
     @IsOptional()
     @IsString()
     cufe?: string | null;
-
-    @IsDefined()
-    @IsString()
-    url_imagen!: string;
-
-    @IsDefined()
-    @IsString()
-    imagePublicId!: string;
 
     @IsOptional()
     @IsString()
@@ -74,6 +74,9 @@ export class facturas {
     @IsDefined()
     organizaciones!: organizaciones;
 
+    @IsOptional()
+    usuarios?: usuarios | null;
+
     @IsDefined()
-    usuarios!: usuarios;
+    imagenes!: factura_imagenes[];
 }

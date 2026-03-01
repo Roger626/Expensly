@@ -1,0 +1,49 @@
+<main class="onboarding-paso2-layout">
+    <div class="onboarding-card">
+        <header>
+        <h1>¡Casi listo!</h1>
+        <p>Creemos tu usuario administrador.</p>
+        </header>
+    </div>
+    
+    <form [formGroup]="onboardingForm" (ngSubmit)="onSubmit()" class="admin-form">
+
+        <app-input
+        formControlName="nombre"
+        label="Nombre"
+        placeholder="Ej: Juan Pérez"
+        ></app-input>
+
+        <app-input
+        formControlName="email"
+        label="Email"
+        type="email"
+        placeholder="Ej: juan@empresa.com"
+        ></app-input>
+
+        <app-input
+        formControlName="password"
+        label="Contraseña"
+        type="password"
+        placeholder="Mínimo 8 caracteres"
+        ></app-input>
+
+        <app-input
+        formControlName="confirmPassword"
+        label="Confirmar contraseña"
+        type="password"
+        placeholder="Confirma la contraseña anterior"
+        ></app-input>
+
+        <div class="actions">
+            <button type="button" class="regresar-btn" (click)="onRegresar()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 5l-7 7 7 7"/>
+                </svg>
+                Regresar
+            </button>
+
+            <button type="submit" class="next-btn" [disabled]="!onboardingForm.valid">Guardar</button>
+        </div>
+    </form>
+</main>

@@ -1,0 +1,123 @@
+<div class="invoice-wrapper">
+
+  <!-- Table -->
+  <div class="invoice-table" role="table" aria-label="Tabla de facturas">
+
+    <!-- Header -->
+    <div class="t-row t-header" role="row">
+      <div class="t-cell col-check" role="columnheader">
+        <input
+          type="checkbox"
+          class="cb"
+          [checked]="allSelected"
+          [indeterminate]="someSelected"
+          (change)="toggleAll()"
+          aria-label="Seleccionar todas"
+        >
+      </div>
+      <div class="t-cell col-date" role="columnheader">FECHA <span class="sort-icon">↑</span></div>
+      <div class="t-cell col-employee" role="columnheader">EMPLEADO</div>
+      <div class="t-cell col-cufe" role="columnheader">COMERCIO</div>
+      <div class="t-cell col-category" role="columnheader">CATEGORÍA</div>
+      <div class="t-cell col-total" role="columnheader">TOTAL</div>
+      <div class="t-cell col-status" role="columnheader">ESTADO</div>
+      <div class="t-cell col-actions" role="columnheader"></div>
+    </div>
+
+    <!-- Body -->
+    @for (invoice of invoices; track invoice.facturaId) {
+      <div class="t-row t-body-row" role="row" [class.row-selected]="isSelected(invoice)">
+
+        <!-- Checkbox -->
+        <div class="t-cell col-check" role="cell">
+          <input
+            type="checkbox"
+            class="cb"
+            [checked]="isSelected(invoice)"
+            (change)="toggleSelection(invoice)"
+          >
+        </div>
+
+        <!-- Date -->
+        <div class="t-cell col-date" role="cell">
+          {{ invoice.fechaEmision | date:'MMM d, yyyy' }}
+        </div>
+
+        <!-- Empleado -->
+        <div class="t-cell col-employee" role="cell">
+          <div class="employee">
+            <div class="avatar" [style.background-color]="getAvatarColor(invoice.nombreEmpleado)">
+              {{ getInitials(invoice.nombreEmpleado) }}
+            </div>
+            <span class="employee-name" [title]="invoice.nombreEmpleado ?? ''">{{ invoice.nombreEmpleado ?? '—' }}</span>
+          </div>
+        </div>
+
+        <!-- Proveedor -->
+        <div class="t-cell col-cufe" role="cell">
+          <span class="cufe" [title]="invoice.nombreProveedor">{{ invoice.nombreProveedor }}</span>
+        </div>
+
+        <!-- Category -->
+        <div class="t-cell col-category" role="cell">
+          {{ invoice.categoria ?? '—' }}
+        </div>
+
+        <!-- Total -->
+        <div class="t-cell col-total" role="cell">
+          <strong>{{ invoice.montoTotal | currency:'USD':'symbol':'1.2-2' }}</strong>
+        </div>
+
+        <!-- Status -->
+        <div class="t-cell col-status" role="cell">
+          <span class="status-badge" [ngClass]="getStatusClass(invoice.estado)">
+            {{ getStatusLabel(invoice.estado) }}
+          </span>
+        </div>
+
+        <!-- Actions -->
+        <div class="t-cell col-actions" role="cell">
+          <button class="btn-actions" aria-label="Ver detalle" (click)="openInvoice.emit(invoice)" title="Abrir auditoría">⋮</button>
+        </div>
+
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <p>No se encontraron facturas.</p>
+      </div>
+    }
+
+  </div>
+
+  <!-- Footer -->
+  <div class="table-footer">
+    <span class="results-info">
+      Mostrando {{ startItem }} al {{ endItem }} de {{ totalItems }} resultados
+    </span>
+
+    <div class="pagination">
+      <button
+        class="page-btn"
+        (click)="goToPage(currentPage - 1)"
+        [disabled]="currentPage === 1"
+        aria-label="Página anterior"
+      >&lt;</button>
+
+      @for (page of pageNumbers; track page) {
+        <button
+          class="page-btn"
+          [class.page-active]="page === currentPage"
+          (click)="goToPage(page)"
+        >{{ page }}</button>
+      }
+
+      <button
+        class="page-btn"
+        (click)="goToPage(currentPage + 1)"
+        [disabled]="currentPage === totalPages"
+        aria-label="Página siguiente"
+      >&gt;</button>
+    </div>
+  </div>
+
+</div>

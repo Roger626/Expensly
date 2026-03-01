@@ -1,0 +1,93 @@
+<!-- ── Modal Cambiar Rol / Eliminar ─────────────────────────────── -->
+<app-user-action-modal
+  [visible]="actionModalVisible"
+  [mode]="actionModalMode"
+  [usuario]="actionModalUsuario"
+  (cerrar)="actionModalVisible = false"
+  (rolCambiado)="onRolCambiado($event)"
+  (eliminado)="onEliminado($event)"
+/>
+
+<!-- ── Modal Invitar Usuario ────────────────────────────────────── -->
+<app-user-invite-modal
+  [visible]="modalVisible"
+  [isLoading]="(isInviting$ | async) ?? false"
+  [success]="(inviteSuccess$ | async) ?? false"
+  (cerrar)="cerrarModal()"
+  (invitar)="onInvitar($event)"
+/>
+
+@if (vm$ | async; as vm) {
+
+<div class="page-usuarios">
+
+  <!-- ── Header ─────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="header-title-block">
+      <div class="header-eyebrow">
+        <span class="header-dot"></span>
+        Panel de Administración
+      </div>
+      <h1 class="page-title">Gestión de Usuarios</h1>
+      <p class="page-subtitle">Administra los miembros de tu equipo, sus roles y permisos de acceso</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-invitar" (click)="abrirModal()">
+        <svg viewBox="0 0 20 20" fill="none" width="16" height="16">
+          <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M10 6.5v7M6.5 10h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Invitar Nuevo Usuario
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Error global ───────────────────────────────────────────────── -->
+  @if (vm.error) {
+    <div class="alert-error">{{ vm.error }}</div>
+  }
+
+  <!-- ── Barra de búsqueda y contador ──────────────────────────────── -->
+  <div class="toolbar">
+    <div class="search-wrapper">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="none" width="16" height="16">
+        <circle cx="8.5" cy="8.5" r="5.5" stroke="#94a3b8" stroke-width="1.8"/>
+        <path d="M13.5 13.5L17 17" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Buscar por nombre, correo o rol…"
+        [ngModel]="busqueda"
+        (ngModelChange)="onBuscar($event)"
+      />
+    </div>
+    <span class="total-badge">{{ vm.total }} usuarios en total</span>
+  </div>
+
+  <!-- ── Skeleton mientras carga ────────────────────────────────────── -->
+  @if (vm.isLoading) {
+    <div class="loading-state">
+      <div class="spinner-lg"></div>
+      <p>Cargando usuarios…</p>
+    </div>
+  } @else {
+    <!-- ── Tabla ─────────────────────────────────────────────────────── -->
+    <app-user-table
+      [usuarios]="vm.paginados"
+      [totalCount]="vm.total"
+      [paginaActual]="paginaActual"
+      [itemsPorPagina]="itemsPorPagina"
+      (pageChange)="onPageChange($event)"
+      (menuAccion)="onMenuAccion($event)"
+    />
+  }
+
+  <!-- ── Guía de roles ─────────────────────────────────────────────── -->
+  <app-user-role-guide />
+
+</div>
+
+}
+

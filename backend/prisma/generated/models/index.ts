@@ -1,4 +1,5 @@
 export { categorias } from "./categorias.model";
+export { factura_imagenes } from "./factura_imagenes.model";
 export { factura_tags } from "./factura_tags.model";
 export { facturas } from "./facturas.model";
 export { logs_auditoria } from "./logs_auditoria.model";

@@ -1,98 +1,261 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Expensly — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST construida con **NestJS 11** y **Prisma 6** sobre PostgreSQL. Implementa la lógica de negocio, autenticación, procesamiento de facturas con IA y la capa de seguridad multi-tenant de Expensly.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Decisiones de arquitectura
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### ¿Por qué NestJS?
 
-## Project setup
+NestJS proporciona inyección de dependencias nativa, módulos aislados y decoradores declarativos que mapean directamente al dominio de la aplicación. Su estructura obliga a mantener la separación entre controladores (transporte HTTP), servicios (lógica de negocio) y repositorios (acceso a datos), lo que facilita el testing y el mantenimiento.
 
-```bash
-$ npm install
+### Patrón Repository
+
+Cada módulo de dominio tiene su propio repositorio que encapsula todas las queries de Prisma. Los servicios nunca acceden al `PrismaService` directamente — siempre a través del repositorio correspondiente.
+
+**¿Por qué?** Esto permite:
+1. Mockar el repositorio en tests de servicio sin levantar base de datos
+2. Cambiar el ORM sin tocar la lógica de negocio
+3. Centralizar los filtros de `organizacion_id` en un único lugar
+
+### Estructura de módulos
+
+```
+src/
+├── infrastructure/
+│   ├── mail/          # MailModule — Nodemailer + Handlebars para emails transaccionales
+│   ├── ocr/           # AzureOcrService — integración con Azure Document Intelligence
+│   ├── storage/       # Cloudinary — subida y gestión de imágenes de facturas
+│   └── tasks/         # Tareas programadas (limpieza de tokens expirados, etc.)
+├── modules/
+│   ├── auth/          # Autenticación: login, registro, reset password, JWT strategy
+│   └── registro-gastos/  # Facturas, categorías, usuarios, exportación
+└── prisma/
+    ├── prisma.module.ts
+    └── prisma.service.ts
 ```
 
-## Compile and run the project
+La carpeta `infrastructure/` contiene adaptadores de servicios externos (Azure, Cloudinary, SMTP). Están aislados del dominio para poder sustituirlos sin afectar la lógica de negocio.
 
-```bash
-# development
-$ npm run start
+---
 
-# watch mode
-$ npm run start:dev
+## Módulos de dominio
 
-# production mode
-$ npm run start:prod
+### `auth`
+
+Gestiona el ciclo completo de autenticación:
+
+- **Registro**: crea la organización y el primer usuario SUPERADMIN en una transacción atómica. Si alguno de los dos falla, no se persiste ninguno.
+- **Login**: verifica credenciales, comprueba que el usuario esté activo y que la sesión no haya sido revocada antes de emitir el JWT.
+- **Reset de contraseña**: genera un token UUID4, lo almacena hasheado en la base de datos con una ventana de expiración de 1 hora. El token se invalida **tras su primer uso**, independientemente de si la ventana sigue abierta.
+- **JWT Strategy**: `PassportStrategy` que valida la firma y extrae `userId`, `organizacionId`, `rol` del payload.
+
+**¿Por qué el `organizacion_id` va en el JWT?** Para que cada request lleve el contexto de tenant sin necesidad de consultar la base de datos para obtenerlo. El guard extrae el `organizacion_id` del token y lo inyecta en todos los queries — nunca se confía en el body del request para este valor.
+
+### `registro-gastos`
+
+Módulo central de la aplicación. Contiene:
+
+#### Facturas
+- **Procesamiento dual (QR + OCR)**:
+  1. El cliente envía las imágenes junto con el QR decodificado en el browser (si lo encontró)
+  2. El backend **verifica el QR de forma independiente** — si el cliente dijo que encontró QR, el backend lo confirma. Si coinciden, consulta la DGI directamente mediante web scraping (cheerio) sin costo de Azure
+  3. Si no hay QR o la verificación falla, invoca Azure Document Intelligence
+  4. Esta arquitectura evita que un cliente malicioso envíe QR falsos que produzcan datos incorrectos
+
+- **Subida de imágenes**: múltiples imágenes por factura, subidas a Cloudinary con metadatos de orden para preservar la secuencia en el visor del frontend. Las imágenes se almacenan en la tabla `factura_imagenes` con `orden` para el carrusel.
+
+- **CRUD de facturas**: todos los endpoints filtran por `organizacion_id` del JWT antes de cualquier operación. Un usuario de la organización A no puede acceder a facturas de la organización B aunque envíe un ID válido en la URL.
+
+- **Aprobación/rechazo**: actualiza el estado de la factura con registro de `motivo_rechazo` y log de auditoría.
+
+- **Exportación Excel**: genera un archivo `.xlsx` en memoria con todos los campos de las facturas filtradas, usando la librería `xlsx` sin dependencias nativas.
+
+#### Usuarios
+- **CRUD completo** con protecciones:
+  - Un SUPERADMIN no puede eliminarse a sí mismo
+  - Un SUPERADMIN no puede ser eliminado ni degradado por un CONTADOR
+  - Al eliminar un usuario, sus facturas se actualizan a `usuario_id = null` mediante `onDelete: SetNull` en Prisma — las facturas no se borran, solo quedan huérfanas
+- **Invitaciones por email**: el SUPERADMIN invita a un nuevo usuario; el sistema crea la cuenta con una contraseña temporal y envía un email con el enlace de acceso
+
+#### Categorías
+- Categorías de gasto propias de cada organización (`UNIQUE(organizacion_id, nombre)`)
+- Creadas automáticamente durante el onboarding con valores por defecto. Estos podran ser modificados posteriormente por el SUPERADMIN.
+
+---
+
+## Seguridad
+
+### Guards
+
+```typescript
+// Protección de endpoint por rol
+@UseGuards(JwtAuthGuard, RoleGuard)
+@Roles('SUPERADMIN')
+@Delete(':id')
+deleteUser(@Param('id') id: string, @CurrentUser() user: JwtPayload) { ... }
 ```
 
-## Run tests
+- `JwtAuthGuard`: verifica firma y expiración del token
+- `RoleGuard`: compara el rol del payload con los roles requeridos en el decorator `@Roles`
+- `@CurrentUser()`: decorator personalizado que extrae el payload ya verificado del request
 
-```bash
-# unit tests
-$ npm run test
+### Aislamiento multi-tenant
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```typescript
+// En TODOS los repositorios — ejemplo en facturas
+async findAll(organizacionId: string, filters: FilterDto) {
+  return this.prisma.facturas.findMany({
+    where: {
+      organizacion_id: organizacionId,  // ← Siempre del JWT, nunca del body
+      ...buildFilters(filters),
+    }
+  });
+}
 ```
 
-## Deployment
+Este patrón se repite en todos los repositorios: categorías, usuarios, logs, tags. No existe ningún endpoint que devuelva datos sin filtrar por `organizacion_id`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+---
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Procesamiento OCR con Azure Document Intelligence
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```typescript
+// infrastructure/ocr/azure-ocr.service.ts
+const client = DocumentAnalysisClient(endpoint, credential);
+const poller = await client.beginAnalyzeDocument('prebuilt-invoice', imageStream);
+const result = await poller.pollUntilDone();
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Se usa el modelo `prebuilt-invoice` de Azure, entrenado específicamente para facturas. Extrae: número de factura, fecha, nombre del proveedor, RUC, montos (subtotal, ITBMS, total).
 
-## Resources
+**¿Por qué Azure y no Tesseract?** Tesseract requiere imágenes de alta calidad y procesamiento adicional para facturas. Azure Document Intelligence maneja fotografías tomadas con teléfono, imágenes inclinadas y baja resolución con mucha mayor precisión, lo que reduce las correcciones manuales del usuario.
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Base de datos y migraciones
 
-## Support
+### Prisma
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+# Crear nueva migración
+npx prisma migrate dev --name nombre_descriptivo
 
-## Stay in touch
+# Aplicar migraciones en producción
+npx prisma migrate deploy
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# Generar cliente Prisma (incluye fix post-generación)
+npm run prisma:generate
+```
 
-## License
+#### Script `fix-generated.js`
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Prisma v6 movió `Decimal` y `JsonValue` fuera del namespace `Prisma`. Esto rompe el código generado por `prisma-class-validator-generator`. El script `prisma/fix-generated.js` parcheа los archivos generados automáticamente después de cada `prisma generate`, reemplazando las referencias antiguas por los tipos correctos.
+
+**¿Por qué no cambiar el generador?** `prisma-class-validator-generator` no tiene una versión compatible con Prisma v6 al momento del MVP. El script es una solución temporal documentada hasta que el generador actualice su soporte.
+
+### Variables de entorno requeridas
+
+```env
+# Base de datos
+DATABASE_URL="postgresql://user:password@host:5432/expensly"
+
+# JWT
+JWT_SECRET="secreto-muy-largo-y-aleatorio"
+JWT_EXPIRES_IN="7d"
+
+# Azure Document Intelligence
+AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT="https://xxx.cognitiveservices.azure.com/"
+AZURE_DOCUMENT_INTELLIGENCE_KEY="xxx"
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME="xxx"
+CLOUDINARY_API_KEY="xxx"
+CLOUDINARY_API_SECRET="xxx"
+
+# SMTP (Nodemailer)
+MAIL_HOST="smtp.gmail.com"
+MAIL_PORT=587
+MAIL_USER="correo@gmail.com"
+MAIL_PASS="app-password"
+MAIL_FROM="Expensly <correo@gmail.com>"
+
+# URL del frontend (para links en emails)
+FRONTEND_URL="http://localhost:4200"
+```
+
+---
+
+## Comandos disponibles
+
+```bash
+# Instalar dependencias
+npm install
+
+# Desarrollo con hot-reload
+npm run start:dev
+
+# Desarrollo con debug
+npm run start:debug
+
+# Build de producción
+npm run build
+
+# Producción (requiere build previo)
+npm run start:prod
+
+# Linter
+npm run lint
+
+# Generar cliente Prisma (con fix automático)
+npm run prisma:generate
+
+# Tests unitarios
+npm test
+
+# Tests unitarios en modo watch
+npm run test:watch
+
+# Cobertura de tests
+npm run test:cov
+
+# Tests E2E
+npm run test:e2e
+```
+
+---
+
+## Colecciones de Prisma y herramientas de desarrollo
+
+```bash
+# Abrir Prisma Studio (interfaz visual de la BD)
+npx prisma studio
+
+# Ver el estado de las migraciones
+npx prisma migrate status
+
+# Resetear la base de datos (¡destructivo!)
+npx prisma migrate reset
+```
+
+---
+
+## Consideraciones de producción
+
+1. **Variables de entorno**: nunca commitear el archivo `.env`. Usar variables de entorno del proveedor de hosting.
+2. **Migraciones**: ejecutar `prisma migrate deploy` (no `dev`) en producción — no modifica el esquema interactivamente.
+3. **JWT Secret**: usar un valor de al menos 256 bits generado aleatoriamente.
+4. **Cloudinary**: configurar carpetas separadas por entorno (`expensly/dev/`, `expensly/prod/`).
+5. **Rate limiting**: pendiente de implementar en endpoints sensibles (login, reset-password) para producción.
+
+---
+
+## Requisitos
+
+- Node.js ≥ 20
+- npm ≥ 10
+- PostgreSQL ≥ 15
+- Cuenta activa en Azure Cognitive Services (Document Intelligence)
+- Cuenta activa en Cloudinary
+- Cuenta SMTP (Gmail App Password o equivalente)

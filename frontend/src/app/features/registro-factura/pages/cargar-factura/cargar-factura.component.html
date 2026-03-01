@@ -1,0 +1,51 @@
+<div class="page-cargar-factura">
+    <section class="subir-factura">
+        <app-cargar-archivo
+            (enviarArchivos)="procesarFactura($event)"
+            (archivosDescartados)="limpiarEstadoPadre()">
+        </app-cargar-archivo>
+
+        <div *ngIf="isLoading" class="estado-carga">
+            <span class="spinner"></span>
+            <p>{{ loadingMensaje }}</p>
+        </div>
+
+        <!-- Badge visible solo mientras se carga (QR ya detectado en browser) -->
+        <div *ngIf="isLoading && qrDetectado === true" class="qr-badge qr-badge--found">
+            <span>&#10003; QR detectado</span>
+        </div>
+        <div *ngIf="isLoading && qrDetectado === false" class="qr-badge qr-badge--notfound">
+            <span>No se detecto QR, procesando con IA</span>
+        </div>
+
+        <div *ngIf="errorMensaje" class="estado-error">
+            <p>{{ errorMensaje }}</p>
+        </div>
+
+        @if(resultadoOCR){
+            <section class="Factura-output-section">
+                <div class="factura-output">
+
+                @if(imageUrls.length > 0){
+                    <div class="factura-output__viewer" [class.viewer--lightbox]="isLightboxOpen">
+                        <app-factura-view [imageUrls]="imageUrls" (lightboxChange)="onLightboxChange($event)"></app-factura-view>
+                    </div>
+                }
+
+                <div class="factura-output__form">
+                    <app-factura-form
+                        [invoiceData]="resultadoOCR"
+                        [categorias]="categorias"
+                        [isSaving]="isSaving"
+                        (submitInvoice)="createFactura($event)">
+                    </app-factura-form>
+                </div>
+
+                </div>
+            </section>
+            
+        }
+        
+        
+    </section>
+</div>

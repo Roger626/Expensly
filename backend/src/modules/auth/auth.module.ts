@@ -19,11 +19,15 @@ import { JwtAuthGuard } from './guards/jwt.guard';
 
 // Prisma
 import { PrismaModule } from '../../prisma/prisma.module';
+import { MailModule } from '../../infrastructure/mail/mail.module';
 
 @Module({
   imports: [
     // Importar módulo de Prisma
     PrismaModule,
+
+    // Email
+    MailModule,
     
     // Configurar Passport con estrategia JWT por defecto
     PassportModule.register({ defaultStrategy: 'jwt' }),

@@ -1,0 +1,53 @@
+<!-- <app-navbar></app-navbar> -->
+
+<main class="container">
+  <div class="login-card">
+    <header class="login-header">
+      <h1>Crea tu cuenta</h1>
+      <p class="subtitle">Únete a nosotros para gestionar tus gastos y recuperación de impuestos.</p>
+    </header>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="login-form">
+      
+      <app-input 
+        label="Nombre" 
+        placeholder="Juan Pérez" 
+        formControlName="name">
+      </app-input>
+
+      <app-input 
+        label="Email" 
+        type="email" 
+        placeholder="nombre@empresa.com" 
+        formControlName="email">
+      </app-input>
+
+      <app-input 
+        label="Password" 
+        type="password" 
+        placeholder="••••••••" 
+        formControlName="password">
+      </app-input>
+
+      <app-input 
+        label="Confirmar Password" 
+        type="password" 
+        placeholder="••••••••" 
+        formControlName="confirmPassword">
+      </app-input>
+
+      <span class="register-text">
+        ¿Ya tienes una cuenta? <a [routerLink]="['/auth/login']">Inicia sesión</a>
+      </span>
+
+      <button type="submit" class="btn-primary">Registrarse</button>
+
+      <div class="footer-security">
+        <span>🔒 ENCRIPTACIÓN DE GRADO EMPRESARIAL SEGURA</span>
+      </div>
+    </form>
+  </div>
+</main>
+
+
+<!-- <app-footer></app-footer> -->

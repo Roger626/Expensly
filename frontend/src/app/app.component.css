@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap');
+
+/* =========================================================
+   Global layout reset
+   ========================================================= */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   Main content area
+   Usamos margin-left para que el elemento ocupe exactamente
+   el espacio restante sin desbordarse.
+   ========================================================= */
+main {
+  --sidebar-w: 0px;
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+  width: calc(100% - var(--sidebar-w));
+  transition: margin-left 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+              width      0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  overflow-x: hidden;
+}
+
+/* Cuando hay sidebar expandido */
+.with-sidebar {
+  --sidebar-w: 16.25rem; /* 260px */
+  padding: 1.75rem 2rem;   /* margen uniforme: arriba/abajo + izq/der */
+}
+
+/* Sidebar contraído */
+.with-sidebar.sidebar-collapsed {
+  --sidebar-w: 5.5rem; /* 88px */
+  padding: 1.75rem 2rem;
+}
+
+/* Cuando hay navbar, bajamos el contenido */
+.with-navbar {
+  padding-top: 5rem;
+}

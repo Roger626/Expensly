@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
-import * as toStream from 'buffer-to-stream';
+import { Readable } from 'stream';
 import { IStorageService } from './storage.interface';
 
 @Injectable()
 export class CloudinaryService implements IStorageService {
   
-  // 1. Subida inicial a carpeta temp
+  // 1. Subida inicial a carpeta temp (un solo archivo)
   async uploadToTemp(file: Buffer): Promise<{ url: string; publicId: string }> {
     return new Promise((resolve, reject) => {
       const upload = cloudinary.uploader.upload_stream(
@@ -14,25 +14,64 @@ export class CloudinaryService implements IStorageService {
         (error, result) => {
           if (error) return reject(error);
           if (!result) return reject(new Error('Upload failed: no result'));
-          resolve({
-            url: result.secure_url,
-            publicId: result.public_id,
-          });
+          resolve({ url: result.secure_url, publicId: result.public_id });
         },
       );
-      toStream(file).pipe(upload);
+      Readable.from(file).pipe(upload);
     });
   }
 
-  // 2. Mover de temp a permanente (renombrar)
-  async makePermanent(publicId: string): Promise<string> {
-    const newPublicId = publicId.replace('expensly/temp/', 'expensly/facturas/');
-    
-    const result = await cloudinary.uploader.rename(publicId, newPublicId, {
-      overwrite: true,
-    });
+  // 1b. Subida múltiple a temp en paralelo
+  async uploadManyToTemp(files: Buffer[]): Promise<{ urls: string[]; publicIds: string[] }> {
+    const results = await Promise.all(files.map(f => this.uploadToTemp(f)));
+    return {
+      urls:      results.map(r => r.url),
+      publicIds: results.map(r => r.publicId),
+    };
+  }
 
-    return result.secure_url;
+  /**
+   * Mueve de temp a permanente.
+   * Acepta un publicId único O un JSON array de publicIds
+   * (ej. '["expensly/temp/a","expensly/temp/b"]').
+   * Devuelve la URL del primer archivo movido.
+   */
+  async makePermanent(publicId: string): Promise<string> {
+    let ids: string[];
+    try {
+      const parsed = JSON.parse(publicId);
+      ids = Array.isArray(parsed) ? parsed : [publicId];
+    } catch {
+      ids = [publicId];
+    }
+
+    const urls = await Promise.all(
+      ids.map(async id => {
+        // Generar el nuevo ID basado en la convención de carpetas
+        const newId = id.replace('expensly/temp/', 'expensly/facturas/');
+        
+        try {
+          // Intentar renombrar (mover) de temp a facturas
+          const result = await cloudinary.uploader.rename(id, newId, { overwrite: true });
+          return result.secure_url;
+        } catch (error: any) {
+          // Si el recurso no se encuentra en temp, verificar si ya existe en destino (idempotencia)
+          if (error?.message?.includes('Resource not found')) {
+            try {
+              // Verificar si ya existe en la carpeta de destino
+              const existing = await cloudinary.api.resource(newId);
+              return existing.secure_url;
+            } catch (checkError) {
+              // Si tampoco existe en destino, relanzar el error original
+              throw error;
+            }
+          }
+          throw error;
+        }
+      }),
+    );
+
+    return urls[0]; // URL de la primera imagen (imagen principal)
   }
 
   // 3. Eliminar (para el Cron Job de limpieza)

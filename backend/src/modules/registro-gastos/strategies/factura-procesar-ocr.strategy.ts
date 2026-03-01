@@ -1,19 +1,22 @@
 import { FacturaProcesamientoInput, FacturaProcesamientoResult, IProcesarFacturaStrategy } from "./factura-procesar.strategy.interface";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { ProcessInvoice } from "../../../infrastructure/ocr/iazure-ocr.service";
+import { OCR_SERVICE } from "../../../infrastructure/ocr/ocr.tokens";
 
 @Injectable()
 export class ProcesarFacturaOCRStrategy implements IProcesarFacturaStrategy {
-    constructor(private readonly ocrService: ProcessInvoice) {}
+    constructor(
+        @Inject(OCR_SERVICE)
+        private readonly ocrService: ProcessInvoice,
+    ) {}
 
     async canHandle(input: FacturaProcesamientoInput): Promise<boolean> {
-        if (!input.fileBuffer || input.fileBuffer.length === 0) return false;
-        return true;
+        const buffers = input.fileBuffers ?? (input.fileBuffer ? [input.fileBuffer] : []);
+        return buffers.length > 0;
     }
     
     async processInvoice(input: FacturaProcesamientoInput): Promise<FacturaProcesamientoResult>{
-        const ocrData = await this.ocrService.processInvoice(input.fileBuffer!);
-
-        return ocrData;
+        const buffers = input.fileBuffers ?? (input.fileBuffer ? [input.fileBuffer] : []);
+        return await this.ocrService.processInvoice(buffers);
     }
 }

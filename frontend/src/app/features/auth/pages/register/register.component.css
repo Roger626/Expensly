@@ -1,0 +1,109 @@
+:host {
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f8fafc; /* Fondo neutro */
+  padding: 40px 20px;
+}
+
+/* Tarjeta unificada */
+.login-card {
+  background: #ffffff;
+  padding: 3rem 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 460px; /* Un poco más ancho para acomodar campos de registro */
+  animation: slideUp 0.5s ease-out;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+h1 {
+  font-size: 1.8rem;
+  color: #0f172a;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.025em;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem; /* Espaciado uniforme entre inputs */
+}
+
+/* Texto de "Inicia sesión" */
+.register-text {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0.5rem 0;
+}
+
+.register-text a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.register-text a:hover {
+  text-decoration: underline;
+}
+
+/* Botón de acción principal (Azul TaxRecovery) */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background-color: #1d58ef;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn-primary:hover {
+  background-color: #1746c1;
+}
+
+.btn-primary:active {
+  transform: scale(0.99);
+}
+
+/* Footer de seguridad */
+.footer-security {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Asegurar que el input hijo se vea bien */
+app-input {
+  display: block;
+}

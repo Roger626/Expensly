@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import type { JsonValue } from "@prisma/client/runtime/library";
 import { IsString, IsDefined, IsOptional, IsDate } from "class-validator";
 import { organizaciones, usuarios } from "./";
 
@@ -11,16 +12,16 @@ export class logs_auditoria {
     @IsString()
     organizacion_id!: string;
 
-    @IsDefined()
+    @IsOptional()
     @IsString()
-    usuario_id!: string;
+    usuario_id?: string | null;
 
     @IsDefined()
     @IsString()
     accion!: string;
 
     @IsOptional()
-    detalle?: Prisma.JsonValue | null;
+    detalle?: JsonValue | null;
 
     @IsOptional()
     @IsDate()
@@ -29,6 +30,6 @@ export class logs_auditoria {
     @IsDefined()
     organizaciones!: organizaciones;
 
-    @IsDefined()
-    usuarios!: usuarios;
+    @IsOptional()
+    usuarios?: usuarios | null;
 }

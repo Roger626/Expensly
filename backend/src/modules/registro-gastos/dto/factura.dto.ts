@@ -1,17 +1,20 @@
-import { IsString, IsNumber, IsDateString, IsOptional, Min, Max, IsUUID, IsNotEmpty, IsDecimal, IsUrl, IsEnum } from 'class-validator';
+import { IsString, IsNumber, IsDateString, IsOptional, Min, IsUUID, IsNotEmpty, IsUrl, IsEnum, ValidateNested, IsArray } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 import { EstadoFactura } from "generated/prisma/enums";
+import { Type } from 'class-transformer';
 
 
+// Definimos la estructura de cada imagen
+class ImagenFacturaDto {
+  @IsUrl()
+  @IsNotEmpty()
+  url: string;
+
+  @IsString()
+  @IsNotEmpty()
+  publicId: string;
+}
 export class CreateFacturaDto {
-
-    @IsUUID()
-    @IsNotEmpty()
-    organizacionId: string;
-
-    @IsUUID()
-    @IsNotEmpty()
-    usuarioId: string;
 
     @IsUUID()
     @IsNotEmpty()
@@ -27,6 +30,11 @@ export class CreateFacturaDto {
     @IsOptional()
     impuesto?: number;
 
+    @IsNumber()
+    @Min(0.00)
+    @IsOptional()
+    subtotal?: number;
+
     @IsDateString()
     @IsNotEmpty()
     fechaEmision: string;
@@ -34,6 +42,10 @@ export class CreateFacturaDto {
     @IsNotEmpty()
     @IsString()
     rucProveedor: string;
+
+    @IsOptional()
+    @IsString()
+    dvProveedor?: string;
 
     @IsNotEmpty()
     @IsString()
@@ -43,17 +55,15 @@ export class CreateFacturaDto {
     @IsString()
     numeroFactura: string;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
-    cufe: string;
+    cufe?: string;
 
+   @IsArray()
+    @ValidateNested({ each: true }) // Valida cada objeto del arreglo
+    @Type(() => ImagenFacturaDto)   // Transforma el JSON al tipo de la clase
     @IsNotEmpty()
-    @IsUrl()
-    urlFactura: string;
-
-    @IsNotEmpty()
-    @IsString()
-    imagePublicId: string;
+    imagenesFactura: ImagenFacturaDto[];
 
     @IsOptional()
     @IsString({ each: true })
@@ -71,7 +81,11 @@ export class UpdateFacturaDto extends PartialType(CreateFacturaDto) {
     @IsOptional()
     motivoRechazo?: string;
 
+}
 
-
-
+export class ExportInvoicesDto {
+    @IsArray()
+    @IsUUID('4', { each: true })
+    @IsNotEmpty()
+    ids: string[];
 }

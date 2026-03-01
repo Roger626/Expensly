@@ -1,0 +1,37 @@
+<main class="onboarding-paso1-layout">
+    <header>
+        <h1>¡Bienvenido a Expensly!</h1>
+        <p>Vamos a configurar tu cuenta en unos pocos pasos.</p>
+    </header>
+
+    <form [formGroup]="onboardingForm" class="form-layout" (ngSubmit)="onNext()">
+        <app-input
+            formControlName="companyNombre"
+            label="Nombre legal de la empresa"
+            placeholder="Ej: Acme Corp"
+        ></app-input>
+
+        <div class="ruc-conatainer">
+            <app-input
+                formControlName="ruc"
+                label="RUC"
+                placeholder="Ej: 1234567890"
+            ></app-input>
+
+            <app-input
+                formControlName="dv"
+                label="DV"
+                placeholder="Ej: 1"
+            ></app-input>
+        </div>
+        
+        <div class="actions">
+            <button type="submit" class="next-btn" [disabled]="!onboardingForm.valid">Continuar</button>
+        </div>
+
+        <p class="login-link">¿Ya tienes una cuenta? <a routerLink="/auth/login">Inicia sesión</a></p>
+        
+
+        
+    </form>
+</main>

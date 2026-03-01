@@ -1,0 +1,16 @@
+<div class="form-control">
+      <label [for]="label">{{ label }}</label>
+      <input
+        [type]="type"
+        [id]="label"
+        (input)="onInput($event)"
+        [placeholder]="placeholder"
+        (blur)="onTouched()"
+        [disabled]="disable"
+        [value]="value"
+        [class.is-invalid]="isInvalid"
+      />
+      <span *ngIf="isInvalid" class="error-msg">
+        Este campo es requerido o inválido
+      </span>
+    </div>

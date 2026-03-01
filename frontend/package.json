@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "postinstall": "node -e \"const fs=require('fs');const src='node_modules/zxing-wasm/dist/reader/zxing_reader.wasm';const dst='public/assets/zxing_reader.wasm';fs.mkdirSync('public/assets',{recursive:true});fs.copyFileSync(src,dst);console.log('zxing_reader.wasm copied to public/assets/');\""
   },
   "private": true,
   "dependencies": {
@@ -17,9 +18,12 @@
     "@angular/platform-browser": "^19.2.0",
     "@angular/platform-browser-dynamic": "^19.2.0",
     "@angular/router": "^19.2.0",
+    "lucide-angular": "^0.574.0",
     "rxjs": "~7.8.0",
+    "swiper": "^12.1.2",
     "tslib": "^2.3.0",
-    "zone.js": "~0.15.0"
+    "zone.js": "~0.15.0",
+    "zxing-wasm": "^2.2.4"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^19.2.19",

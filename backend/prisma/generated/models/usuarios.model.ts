@@ -36,6 +36,14 @@ export class usuarios {
     @IsDate()
     fecha_creacion?: Date | null;
 
+    @IsOptional()
+    @IsString()
+    reset_token?: string | null;
+
+    @IsOptional()
+    @IsDate()
+    reset_token_expires_at?: Date | null;
+
     @IsDefined()
     facturas!: facturas[];
 

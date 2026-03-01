@@ -1,1 +1,9 @@
 /* You can add global styles to this file, and also import other style files */
+:root {
+  --exp-primary: #1a73e8;      /* Azul principal */
+  --exp-dark: #202124;         /* Texto y fondos oscuros */
+  --exp-gray-bg: #f8f9fa;      /* Fondo de la sección */
+  --exp-border: #dadce0;       /* Bordes finos */
+  --exp-accent: #e8f0fe;       /* Azul claro para estados hover */
+  --exp-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}

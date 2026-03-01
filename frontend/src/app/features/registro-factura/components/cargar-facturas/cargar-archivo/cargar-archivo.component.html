@@ -1,0 +1,82 @@
+﻿<div class="upload-page">
+  <header class="page-header">
+    <div class="title-group">
+      <h1>Subir Factura</h1>
+      <p>Extrae y valida los datos de tu factura con IA</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-ghost" (click)="onDiscard()" [disabled]="!hasFiles">Descartar todo</button>
+      <button class="btn-primary" (click)="onUpload()" [disabled]="!hasFiles">
+        Escanear Factura
+        <span *ngIf="imagenes.length > 1" class="badge">{{ imagenes.length }}</span>
+      </button>
+    </div>
+  </header>
+
+  <section class="container-main">
+
+    <!-- Zona drop (solo cuando no hay archivos) -->
+    <div
+      *ngIf="!hasFiles"
+      class="drop-zone"
+      [class.dragging]="isDragging"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+      (click)="fileInput.click()"
+    >
+      <div class="upload-content">
+        <div class="icon-circle">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+            <path d="M12 12v9"/><path d="m16 16-4-4-4 4"/>
+          </svg>
+        </div>
+        <div class="text-group">
+          <h2>Haz clic para subir o arrastra y suelta</h2>
+          <p>JPG, PNG o WEBP &middot; hasta 5 MB por imagen &middot; max. {{ MAX_FILES }} imagenes</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid de thumbnails -->
+    <div *ngIf="hasFiles" class="previews-area">
+      <div class="thumbnails-grid">
+
+        <div *ngFor="let img of imagenes; let i = index" class="thumb-card">
+          <img [src]="img.preview" [alt]="'Imagen ' + (i + 1)" class="thumb-img">
+          <div class="thumb-overlay">
+            <span class="thumb-num">{{ i + 1 }}</span>
+            <button class="btn-remove" (click)="removeImagen(i)" title="Eliminar imagen">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+              </svg>
+            </button>
+          </div>
+          <p class="thumb-name">{{ img.file.name }}</p>
+        </div>
+
+        <!-- Tarjeta agregar mas -->
+        <div
+          *ngIf="imagenes.length < MAX_FILES"
+          class="thumb-card thumb-add"
+          (click)="fileInput.click()"
+          title="Agregar otra imagen"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/><path d="M12 5v14"/>
+          </svg>
+          <span>Agregar</span>
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Input oculto: múltiple siempre activo -->
+  <input type="file" #fileInput (change)="onFileSelected($event)" hidden accept="image/*" multiple>
+</div>

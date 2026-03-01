@@ -13,7 +13,8 @@ import {
     Request,
     ValidationPipe,
     ClassSerializerInterceptor,
-    UseInterceptors
+    UseInterceptors,
+    ForbiddenException,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 
@@ -26,6 +27,11 @@ import { LoginDto } from '../dto/login.dto';
 import { RegisterUserDto } from '../dto/register-user.dto';
 import { CompleteOnboardingDto } from '../dto/complete-onboarding.dto';
 import { ChangePasswordDto } from '../dto/change-password.dto';
+import { ForgotPasswordDto } from '../dto/forgot-password.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
+import { InviteUserDto } from '../dto/invite-user.dto';
+import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
+import { UpdateUserRoleDto } from '../dto/update-user-role.dto';
 
 // Entities (Salida)
 import { UserEntity } from '../entities/user.entity';
@@ -98,6 +104,33 @@ export class AuthController {
         return { message: 'Sesión cerrada exitosamente' };
     }
 
+    // ==================== Recuperación de Contraseña ====================
+
+    /**
+     * Paso 1: el usuario ingresa su correo.
+     * Siempre devuelve el mismo mensaje para no filtrar si el email existe.
+     */
+    @Post('forgot-password')
+    @HttpCode(HttpStatus.OK)
+    async forgotPassword(
+        @Body(ValidationPipe) dto: ForgotPasswordDto,
+    ) {
+        await this.authService.forgotPassword(dto.email);
+        return { message: 'Si ese correo está registrado, recibirás un enlace para restablecer tu contraseña.' };
+    }
+
+    /**
+     * Paso 2: el usuario llega desde el link del correo con el token.
+     */
+    @Post('reset-password')
+    @HttpCode(HttpStatus.OK)
+    async resetPassword(
+        @Body(ValidationPipe) dto: ResetPasswordDto,
+    ) {
+        await this.authService.resetPassword(dto.token, dto.newPassword);
+        return { message: 'Contraseña restablecida exitosamente. Ya puedes iniciar sesión.' };
+    }
+
     // ==================== Gestión de Usuario ====================
 
     @Get('me')
@@ -132,13 +165,107 @@ export class AuthController {
         return { message: 'Contraseña actualizada exitosamente' };
     }
 
+    // ==================== Gestión de Usuarios de la Organización ====================
+
+    @Get('users')
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.OK)
+    async getUsersByOrganization(@Request() req) {
+        const users = await this.authService.getUsersByOrganization(req.user.organizationId);
+        return users.map(u =>
+            plainToInstance(UserEntity, {
+                id:             u.id,
+                email:          u.email,
+                name:           u.nombre_completo,
+                role:           u.rol,
+                organizationId: u.organizacion_id,
+                isActive:       u.activo,
+                createdAt:      u.fecha_creacion,
+            }),
+        );
+    }
+
+    @Post('invite')
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.CREATED)
+    async inviteUser(
+        @Request() req,
+        @Body(ValidationPipe) dto: InviteUserDto,
+    ) {
+        const { user, tempPassword } = await this.authService.inviteUser(dto, req.user.organizationId);
+        return {
+            message: 'Invitación creada exitosamente',
+            tempPassword,
+            user: plainToInstance(UserEntity, {
+                id:             user.id,
+                email:          user.email,
+                name:           user.nombre_completo,
+                role:           user.rol,
+                organizationId: user.organizacion_id,
+                isActive:       user.activo,
+                createdAt:      user.fecha_creacion,
+            }),
+        };
+    }
+
     @Delete('deactivate/:userId')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('SUPERADMIN')
     @HttpCode(HttpStatus.OK)
-    async deactivateUser(@Param('userId') userId: string) {
-        await this.authService.deactivateUser(userId);
+    async deactivateUser(@Param('userId') userId: string, @Request() req) {
+        await this.authService.deactivateUser(userId, req.user.organizationId);
         return { message: 'Usuario desactivado exitosamente' };
+    }
+
+    @Patch('users/:userId/status')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('SUPERADMIN')
+    @HttpCode(HttpStatus.OK)
+    async setUserStatus(
+        @Param('userId') userId: string,
+        @Body(ValidationPipe) dto: UpdateUserStatusDto,
+        @Request() req,
+    ) {
+        const user = await this.authService.setUserStatus(userId, dto.activo, req.user.organizationId);
+        return plainToInstance(UserEntity, {
+            id:             user.id,
+            email:          user.email,
+            name:           user.nombre_completo,
+            role:           user.rol,
+            organizationId: user.organizacion_id,
+            isActive:       user.activo,
+            createdAt:      user.fecha_creacion,
+        });
+    }
+
+    @Patch('users/:userId/role')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('SUPERADMIN')
+    @HttpCode(HttpStatus.OK)
+    async updateUserRole(
+        @Param('userId') userId: string,
+        @Body(ValidationPipe) dto: UpdateUserRoleDto,
+        @Request() req,
+    ) {
+        const user = await this.authService.updateUserRole(userId, dto.rol, req.user.organizationId);
+        return plainToInstance(UserEntity, {
+            id:             user.id,
+            email:          user.email,
+            name:           user.nombre_completo,
+            role:           user.rol,
+            organizationId: user.organizacion_id,
+            isActive:       user.activo,
+            createdAt:      user.fecha_creacion,
+        });
+    }
+
+    @Delete('users/:userId')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('SUPERADMIN')
+    @HttpCode(HttpStatus.OK)
+    async deleteUser(@Param('userId') userId: string, @Request() req) {
+        await this.authService.deleteUser(userId, req.user.organizationId);
+        return { message: 'Usuario eliminado exitosamente' };
     }
 
     // ==================== Validaciones ====================
@@ -158,7 +285,14 @@ export class AuthController {
     @Get('organization/:id')
     @UseGuards(JwtAuthGuard)
     @HttpCode(HttpStatus.OK)
-    async getOrganization(@Param('id') id: string): Promise<OrganizationEntity> {
+    async getOrganization(
+        @Param('id') id: string,
+        @Request() req,
+    ): Promise<OrganizationEntity> {
+        // Prevent cross-org IDOR: a user can only fetch their own organization
+        if (id !== req.user.organizationId) {
+            throw new ForbiddenException('No tienes permiso para acceder a datos de otra organización');
+        }
         const org = await this.onboardingService.getOrganizationById(id);
         
         return plainToInstance(OrganizationEntity, {
