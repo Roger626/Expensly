@@ -16,7 +16,6 @@ Expensly es una aplicación SaaS multi-tenant diseñada para que empresas paname
 Expensly/
 ├── frontend/          Angular 19 — SPA con lazy loading por módulo
 ├── backend/           NestJS 11 — API REST con arquitectura modular
-└── concepts/          Prototipos y experimentos descartados
 ```
 
 El proyecto sigue una **separación estricta de capas**: el frontend nunca accede a la base de datos directamente, toda la lógica de negocio reside en el backend, y el frontend consume únicamente endpoints REST autenticados con JWT.
