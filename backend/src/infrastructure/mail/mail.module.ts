@@ -33,8 +33,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           rejectUnauthorized: false // ¡CRÍTICO! Desactivar estrictos checks de certificado en entornos restringidos como Render
         },
         logger: true, // Logs detallados de SMTP en la consola
-        debug: true   // Debug mode para ver el handshake completo
-        defaults: {
+        debug: true,   // Debug mode para ver el handshake completo
+        family: 4      // ¡FUERZA IPv4! Render a veces falla resolviendo IPv6 con Gmail
+      },
+      defaults: {
           from: `"Expensly" <${config.get<string>('MAIL_USER')}>`,
         },
       }),
