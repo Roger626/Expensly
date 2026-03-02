@@ -1073,7 +1073,7 @@ ng serve
 *Versión MVP 1.0.0 — Rama `main` — 1 de marzo de 2026*
 esarrollo
 ng serve
-# La aplicación queda en http://localhost:4200
+# La aplicación queda en https://expensly-app.vercel.app
 ```
 
 ### Comandos útiles
