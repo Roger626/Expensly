@@ -30,9 +30,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         maxConnections: 5,      // Limitar concurrencia
         maxMessages: 100,       // Reiniciar conexión cada 100 mensajes
         tls: {
-          rejectUnauthorized: true // Mantener seguridad estricta con Gmail
-        }
-      },
+          rejectUnauthorized: false // ¡CRÍTICO! Desactivar estrictos checks de certificado en entornos restringidos como Render
+        },
+        logger: true, // Logs detallados de SMTP en la consola
+        debug: true   // Debug mode para ver el handshake completo
         defaults: {
           from: `"Expensly" <${config.get<string>('MAIL_USER')}>`,
         },
