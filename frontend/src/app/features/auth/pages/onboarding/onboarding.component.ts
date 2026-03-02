@@ -8,6 +8,7 @@ import { AuthService } from '../../services/auth.service';
 import { OnboardingPaso1Component } from '../../components/onboarding-paso1/onboarding-paso1.component';
 import { OnboardingPaso2Component } from '../../components/onboarding-paso2/onboarding-paso2.component';
 import { ModalComponent } from '../../../../shared/modal/modal.component';
+import { ToastService } from '../../../../shared/toast/toast.service';
 
 @Component({
   selector: 'app-onboarding',
@@ -37,7 +38,8 @@ export class OnboardingComponent implements OnInit {
   constructor(
     private router: Router,
     private onboardingService: OnboardingService,
-    private authService: AuthService
+    private authService: AuthService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit() {
@@ -51,7 +53,7 @@ export class OnboardingComponent implements OnInit {
 
   goToDashboard(): void {
     this.showSuccessModal = false;
-    this.router.navigate(['/registrar-facturas']);
+    this.router.navigate(['/admin/facturas']);
   }
 
   private calculateCurrentStep() {
@@ -86,7 +88,24 @@ export class OnboardingComponent implements OnInit {
           this.authService.saveSession(response.authData);
           this.orgName = this.onboardingService.getCurrentData().step1.companyNombre;
           this.showSuccessModal = true;
-        } catch (error) {
+        } catch (error: any) {
+          const status = error?.status;
+          if (status === 409) {
+            this.toastService.error(
+              'Correo ya registrado',
+              error?.error?.message ?? 'El correo electrónico ya está en uso. Intenta con otro.'
+            );
+          } else if (status === 400) {
+            this.toastService.error(
+              'Datos inválidos',
+              error?.error?.message ?? 'Revisa los campos e intenta nuevamente.'
+            );
+          } else {
+            this.toastService.error(
+              'Error al registrar',
+              'Ocurrió un error inesperado. Intenta nuevamente.'
+            );
+          }
           console.error('Error durante el onboarding', error);
         }
       });
