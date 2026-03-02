@@ -386,17 +386,18 @@ export class AuthService {
         );
 
         // Enviar correo de invitación
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:4200');
         await this.mailerService.sendMail({
             to: dto.email,
             subject: '🎉 Te han invitado a Expensly',
-            html: this.buildInviteEmailHtml(dto.email, tempPassword),
+            html: this.buildInviteEmailHtml(dto.email, tempPassword, frontendUrl),
         });
 
         return { user, tempPassword };
     }
 
     // ── Plantilla HTML del correo de invitación ──────────────────────────────
-    private buildInviteEmailHtml(email: string, tempPassword: string): string {
+    private buildInviteEmailHtml(email: string, tempPassword: string, frontendUrl: string): string {
         return `
 <!DOCTYPE html>
 <html lang="es">
@@ -434,7 +435,7 @@ export class AuthService {
             ⚠️ Te recomendamos cambiar tu contraseña después del primer inicio de sesión.
           </p>
 
-          <a href="http://localhost:4200/auth/login"
+          <a href="${frontendUrl}/auth/login"
              style="display:inline-block;background:#4f46e5;color:#fff;padding:13px 30px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
             Ingresar a Expensly →
           </a>
