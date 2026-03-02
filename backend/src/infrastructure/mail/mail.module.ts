@@ -1,21 +1,44 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { MailService } from './mail.service';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 /**
  * MailModule
- * Proporciona MailService, que envía correos mediante la API HTTP de Resend.
+ * Configura el transporte SMTP usando Brevo (smtp-relay.brevo.com).
  *
- * Render bloquea los puertos SMTP salientes (25, 465, 587). Resend resuelve
- * esto usando HTTPS (puerto 443), que nunca está bloqueado en producción.
+ * Por qué Brevo y no Gmail:
+ *   Gmail bloquea conexiones SMTP desde rangos de IP de cloud providers
+ *   (Render, AWS, GCP, etc.) para prevenir spam. Brevo es un relay SMTP
+ *   profesional que acepta conexiones desde cualquier IP y es gratis hasta
+ *   300 emails/día.
  *
  * Variables de entorno necesarias:
- *   RESEND_API_KEY  →  https://resend.com/api-keys
- *   MAIL_FROM       →  "Expensly <noreply@tudominio.com>"
+ *   BREVO_USER  →  tu email de cuenta Brevo (ej. roger@gmail.com)
+ *   BREVO_PASS  →  SMTP key generada en Brevo (NO tu contraseña de Brevo)
+ *                  Brevo Dashboard → SMTP & API → SMTP → Generate a new SMTP key
+ *   MAIL_FROM   →  dirección de envío (ej. "Expensly <noreply@expensly.com>")
  */
 @Module({
-  imports: [ConfigModule],
-  providers: [MailService],
-  exports: [MailService],
+  imports: [
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        transport: {
+          host: 'smtp-relay.brevo.com',
+          port: 587,
+          secure: false,        // STARTTLS (no SSL directo en puerto 587)
+          auth: {
+            user: config.get<string>('BREVO_USER'),
+            pass: config.get<string>('BREVO_PASS'),
+          },
+        },
+        defaults: {
+          from: config.get<string>('MAIL_FROM') ?? `"Expensly" <${config.get<string>('BREVO_USER')}>`,
+        },
+      }),
+    }),
+  ],
+  exports: [MailerModule],
 })
 export class MailModule {}
