@@ -16,16 +16,23 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        transport: {
-          host: 'smtp.gmail.com',
-          port: 587,
-          secure: false,        // TLS (STARTTLS)
-          auth: {
-            user: config.get<string>('MAIL_USER'),
-            pass: config.get<string>('MAIL_PASS'),
-          },
+    useFactory: (config: ConfigService) => ({
+      transport: {
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: config.get<string>('MAIL_USER'),
+          pass: config.get<string>('MAIL_PASS'),
         },
+        // Opciones de robustez para Render/Cloud
+        pool: true,             // Usar pool de conexiones para evitar re-conectar en cada envío
+        maxConnections: 5,      // Limitar concurrencia
+        maxMessages: 100,       // Reiniciar conexión cada 100 mensajes
+        tls: {
+          rejectUnauthorized: true // Mantener seguridad estricta con Gmail
+        }
+      },
         defaults: {
           from: `"Expensly" <${config.get<string>('MAIL_USER')}>`,
         },
