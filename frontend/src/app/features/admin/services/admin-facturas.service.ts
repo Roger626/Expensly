@@ -7,6 +7,7 @@ import { Factura } from '../../registro-factura/models/factura.model';
 import { FacturaApiResponse, mapFacturaApiToModel } from '../models/admin-factura.model';
 import { IAdminFacturasService } from '../interfaces/iadmin-facturas.service';
 import { DEFAULT_FILTER, InvoiceFilterState } from '../models/invoice-filter-state.model';
+import { environment } from '../../../../environments/environment';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Single Responsibility: this service manages ONLY invoice data for the admin.
@@ -16,7 +17,7 @@ import { DEFAULT_FILTER, InvoiceFilterState } from '../models/invoice-filter-sta
 @Injectable({ providedIn: 'root' })
 export class AdminFacturasService implements IAdminFacturasService {
 
-  private readonly API = 'http://localhost:3000/api/registro-gastos';
+  private readonly API = `${environment.apiUrl}/registro-gastos`;
 
   // ── Private mutable state (BehaviorSubject) ───────────────────────────────
   private readonly _facturas$     = new BehaviorSubject<Factura[]>([]);

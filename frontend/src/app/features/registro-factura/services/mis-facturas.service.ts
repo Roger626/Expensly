@@ -6,11 +6,12 @@ import { map, distinctUntilChanged } from 'rxjs/operators';
 import { Factura } from '../models/factura.model';
 import { FacturaApiResponse, mapFacturaApiToModel } from '../../admin/models/admin-factura.model';
 import { InvoiceFilterState, DEFAULT_FILTER } from '../../admin/models/invoice-filter-state.model';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class MisFacturasService {
 
-  private readonly API = 'http://localhost:3000/api/registro-gastos';
+  private readonly API = `${environment.apiUrl}/registro-gastos`;
 
   // ── Private state ─────────────────────────────────────────────────────────
   private readonly _facturas$     = new BehaviorSubject<Factura[]>([]);

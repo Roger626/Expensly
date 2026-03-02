@@ -11,6 +11,7 @@ import {
 } from '../models/usuario.model';
 import { IAdminUsuariosService } from '../interfaces/iadmin-usuarios.service';
 import { ToastService } from '../../../shared/toast/toast.service';
+import { environment } from '../../../../environments/environment';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AdminUsuariosService
@@ -20,7 +21,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
 @Injectable({ providedIn: 'root' })
 export class AdminUsuariosService implements IAdminUsuariosService {
 
-  private readonly API = 'http://localhost:3000/api/auth';
+  private readonly API = `${environment.apiUrl}/auth`;
 
   // ── Estado privado ────────────────────────────────────────────────────────
   private readonly _usuarios$      = new BehaviorSubject<UsuarioTabla[]>([]);

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { OnboardingData, OnboardingResponse } from '../models/onboarding.dto';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({
     providedIn: 'root'
@@ -20,7 +21,7 @@ export class OnboardingService {
         }
     });
     onboardingData$ = this.onboardingDataSubject.asObservable();
-    private apiUrl = 'http://localhost:3000/api/auth/onboarding';
+    private apiUrl = `${environment.apiUrl}/auth/onboarding`;
 
     constructor(private http: HttpClient){}
 

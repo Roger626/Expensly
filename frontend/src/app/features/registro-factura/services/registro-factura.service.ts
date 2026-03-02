@@ -4,14 +4,15 @@ import { Observable, BehaviorSubject} from 'rxjs';
 import { ProcesarFacturaResponse, Factura, FacturaProcesamientoResult, CreateFacturaDto } from '../models/factura.model';
 import { AuthService } from '../../auth/services/auth.service';
 import { CategoriaDto } from '../models/categoria.model';
+import { environment } from '../../../../environments/environment';
 
 
 @Injectable({
   providedIn: 'root'
 })
 export class RegistroFacturaService {
-    private readonly API_URL        = 'http://localhost:3000/api/registro-gastos';
-    private readonly CATEGORIAS_URL = 'http://localhost:3000/api/categorias';
+    private readonly API_URL        = `${environment.apiUrl}/registro-gastos`;
+    private readonly CATEGORIAS_URL = `${environment.apiUrl}/categorias`;
 
     private facturaDataSubject = new BehaviorSubject<ProcesarFacturaResponse | null>(null);
     facturaData$ = this.facturaDataSubject.asObservable();
