@@ -26,8 +26,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       useFactory: (config: ConfigService) => ({
         transport: {
           host: 'smtp-relay.brevo.com',
-          port: 587,
-          secure: false,        // STARTTLS (no SSL directo en puerto 587)
+          port: 2525,
+          secure: false,        // STARTTLS en puerto 2525
           auth: {
             user: config.get<string>('BREVO_USER'),
             pass: config.get<string>('BREVO_PASS'),
