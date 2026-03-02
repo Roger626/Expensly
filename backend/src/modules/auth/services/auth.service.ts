@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, ConflictException, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { MailerService } from '@nestjs-modules/mailer';
+import { MailService } from '../../../infrastructure/mail/mail.service';
 import * as bcrypt from 'bcrypt';
 import { randomUUID, randomBytes } from 'crypto';
 import type { IAuthRepository } from '../interfaces/iauth.repository';
@@ -37,7 +37,7 @@ export class AuthService {
         private readonly authRepository: IAuthRepository,
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
-        private readonly mailerService: MailerService,
+        private readonly mailService: MailService,
     ) {}
 
     // ==================== Registro de Usuario ====================
@@ -283,7 +283,7 @@ export class AuthService {
 
         const resetUrl = `${this.configService.get<string>('FRONTEND_URL', 'http://localhost:4200')}/auth/reset-password?token=${token}`;
 
-        await this.mailerService.sendMail({
+        await this.mailService.sendMail({
             to:      user.email,
             subject: '🔐 Restablece tu contraseña en Expensly',
             html:    this.buildForgotPasswordEmailHtml(user.nombre_completo, resetUrl),
@@ -386,7 +386,7 @@ export class AuthService {
         );
 
         // Enviar correo de invitación
-        await this.mailerService.sendMail({
+        await this.mailService.sendMail({
             to: dto.email,
             subject: '🎉 Te han invitado a Expensly',
             html: this.buildInviteEmailHtml(dto.email, tempPassword),
