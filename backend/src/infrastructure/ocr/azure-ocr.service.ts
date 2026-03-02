@@ -16,7 +16,13 @@ export class AzureOcrService implements ProcessInvoice {
       throw new Error('Azure OCR credentials are not configured');
     }
 
-    this.client = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(apiKey));
+    this.client = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(apiKey), {
+      retryOptions: {
+        maxRetries: 3,
+        retryDelayInMs: 1000,
+        maxRetryDelayInMs: 4000
+      }
+    });
   }
 
   /**
