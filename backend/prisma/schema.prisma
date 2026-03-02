@@ -1,10 +1,12 @@
 generator client {
   provider   = "prisma-client"
+  output     = "../generated/prisma"
   engineType = "library"
 }
 
 generator classValidator {
   provider = "prisma-class-validator-generator"
+  output   = "./generated"
 }
 
 datasource db {
